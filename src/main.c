@@ -34,7 +34,7 @@ int main() {
         sleep_ms(LED_DELAY_MS);
 
         sprintf(buffer, "iteration: %d\tfailes: %d\n", iter++, num_fails);
-        num_fails += !sendLogMessage("192.168.0.104", 9988, buffer);
+        num_fails += !sendHTTPMessage("192.168.0.104", 9988, "/receive", buffer);
 
         cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, false);
         sleep_ms(LED_DELAY_MS);

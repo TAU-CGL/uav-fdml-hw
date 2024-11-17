@@ -65,6 +65,19 @@ bool sendLogMessage(const char* ip, const u16_t port, char* message) {
     return tcpLoggerSend(logger, message);
 }
 
+bool sendHTTPMessage(const char* ip, const u16_t port, char* route, char* message) {
+    char buffer[LOGGER_MAX_REQUEST_SIZE];
+    snprintf(buffer, sizeof(buffer), 
+        "POST %s HTTP/1.1\r\n"
+        "Host: %s:%d\r\n"
+        "Content-Type: text/plain\r\n"
+        "Content-Length: %d\r\n"
+        "\r\n"
+        "%s",
+        route, ip, port, strlen(message), message);
+    sendLogMessage(ip, port, buffer);
+}
+
 //////////////////
 
 static err_t tcp_client_sent(void* arg, struct tcp_pcb* tpcb, u16_t len) {
