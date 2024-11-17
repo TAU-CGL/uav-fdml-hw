@@ -53,9 +53,9 @@ pico_sdk_init()
 # Add executable. Default name is the project name, version 0.1
 
 add_executable(fdmlhw
-    src/blink.c
+    src/main.c
+    
     src/tof.c
-    src/tcp_client.c
     src/tcp_logger.c
     )
 
