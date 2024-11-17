@@ -5,7 +5,7 @@ app = Flask(__name__)
 @app.route("/receive", methods=["POST"])
 def receive():
     message = request.data.decode("utf-8")
-    print(f"Received message: {message}")
+    print(f"\nReceived message: {message}")
     return "OK", 200
 
 if __name__ == "__main__":

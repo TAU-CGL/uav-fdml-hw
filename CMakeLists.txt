@@ -60,7 +60,7 @@ add_executable(fdmlhw
     )
 
 pico_enable_stdio_usb(fdmlhw 1)
-pico_enable_stdio_uart(fdmlhw 1)
+pico_enable_stdio_uart(fdmlhw 0)
 
 # create map/bin/hex file etc.
 pico_add_extra_outputs(fdmlhw)

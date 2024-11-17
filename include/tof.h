@@ -2,6 +2,10 @@
 
 #ifndef _TOFLIB_H_
 #define _TOFLIB_H_
+
+#include "pico/binary_info.h"
+#include "hardware/i2c.h"
+
 //
 // Copyright (c) 2017 Larry Bank
 // email: bitbank@pobox.com
