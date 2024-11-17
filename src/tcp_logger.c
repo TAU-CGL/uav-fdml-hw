@@ -37,30 +37,23 @@ bool tcpLoggerSend(TCPLogger* logger, char* message) {
     err_t err;
     logger->complete = false; 
     logger->connected = false; 
-    logger->failure = false;
 
-    // printf("Line 42\n");
     cyw43_arch_lwip_begin();
-        // printf("Line 44\n");
         VERIFY(tcp_connect(logger->pcb, &logger->addr, logger->port, tcp_client_on_connected));
-        // int tries = 3; while (tries-- > 0) sleep_ms(LOGGER_WAIT); if (!logger->connected) return false;
-        // printf("Line 47\n");
-        if (logger->failure) return false;
-
-        // printf("Line 51\n");
         VERIFY(tcp_write(logger->pcb, message, (u16_t)strlen(message), TCP_WRITE_FLAG_COPY));
-        // printf("Line 53\n");
         VERIFY(tcp_output(logger->pcb));
-        // printf("Line 55\n");
     cyw43_arch_lwip_end();
 
     int tries = LOGGER_MAX_RETRIES;
     while ((tries-- > 0) && !logger->complete && !logger->failure) 
         sleep_ms(LOGGER_WAIT);
-    // sleep_ms(LOGGER_WAIT);
+    if (!logger->complete) {
+        tcp_close(logger->pcb);
+        cyw43_arch_lwip_end();
+        return false;
+    }
 
     cyw43_arch_lwip_begin();
-        // printf("Line 61\n");
         VERIFY(tcp_close(logger->pcb));
     cyw43_arch_lwip_end();
 
