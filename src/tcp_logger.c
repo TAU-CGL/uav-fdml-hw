@@ -48,7 +48,7 @@ bool tcpLoggerSend(TCPLogger* logger, char* message) {
     while ((tries-- > 0) && !logger->complete && !logger->failure) 
         sleep_ms(LOGGER_WAIT);
     if (!logger->complete) {
-        tcp_close(logger->pcb);
+        tcp_abort(logger->pcb);
         cyw43_arch_lwip_end();
         return false;
     }
