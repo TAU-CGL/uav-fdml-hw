@@ -56,10 +56,11 @@ add_executable(fdmlhw
     src/blink.c
     src/tof.c
     src/tcp_client.c
+    src/tcp_logger.c
     )
 
 pico_enable_stdio_usb(fdmlhw 1)
-pico_enable_stdio_uart(fdmlhw 0)
+pico_enable_stdio_uart(fdmlhw 1)
 
 # create map/bin/hex file etc.
 pico_add_extra_outputs(fdmlhw)
