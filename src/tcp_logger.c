@@ -6,6 +6,8 @@ static err_t tcp_client_recv(void* arg, struct tcp_pcb* tpcb, struct pbuf* packe
 static err_t tcp_client_on_connected(void* arg, struct tcp_pcb* tpcb, err_t err);
 static void tcp_client_on_error(void* arg, err_t err);
 
+static void tcpLoggerDestroy(TCPLogger* logger);
+
 ////////////////////////
 // Implementations
 ////////////////////////
@@ -15,7 +17,10 @@ TCPLogger* tcpLoggerInit(const char* ip, const u16_t port) {
     if (!logger) return NULL;
 
     logger->pcb = tcp_new_ip_type(IPADDR_TYPE_V4);
-    if (!logger->pcb) return false;
+    if (!logger->pcb) {
+        free(logger);
+        return NULL;
+    }
 
     tcp_arg(logger->pcb, logger);
     tcp_sent(logger->pcb, tcp_client_sent);
@@ -38,26 +43,25 @@ bool tcpLoggerSend(TCPLogger* logger, char* message) {
     logger->complete = false; 
     logger->connected = false; 
 
-    cyw43_arch_lwip_begin();
-        VERIFY(tcp_connect(logger->pcb, &logger->addr, logger->port, tcp_client_on_connected));
-        VERIFY(tcp_write(logger->pcb, message, (u16_t)strlen(message), TCP_WRITE_FLAG_COPY));
-        VERIFY(tcp_output(logger->pcb));
-    cyw43_arch_lwip_end();
+    SAFE(tcp_connect(logger->pcb, &logger->addr, logger->port, tcp_client_on_connected));
 
-    int tries = LOGGER_MAX_RETRIES;
-    while ((tries-- > 0) && !logger->complete && !logger->failure) 
-        sleep_ms(LOGGER_WAIT);
-    if (!logger->complete) {
-        tcp_abort(logger->pcb);
-        cyw43_arch_lwip_end();
-        return false;
-    }
+    TRY_UNTIL(logger->connected);
 
-    cyw43_arch_lwip_begin();
-        VERIFY(tcp_close(logger->pcb));
-    cyw43_arch_lwip_end();
+    SAFE(tcp_write(logger->pcb, message, (u16_t)strlen(message), TCP_WRITE_FLAG_COPY));
+    SAFE(tcp_output(logger->pcb));
 
+    TRY_UNTIL(logger->complete);
+
+    SAFE(tcp_close(logger->pcb));
+    tcpLoggerDestroy(logger);
     return true;
+}
+
+static void tcpLoggerDestroy(TCPLogger* logger) {
+    if (logger->pcb) {
+        tcp_abort(logger->pcb);
+    }
+    free(logger);
 }
 
 bool sendLogMessage(const char* ip, const u16_t port, char* message) {
@@ -81,20 +85,25 @@ bool sendHTTPMessage(const char* ip, const u16_t port, char* route, char* messag
 //////////////////
 
 static err_t tcp_client_sent(void* arg, struct tcp_pcb* tpcb, u16_t len) {
-    // printf("on send\n");
     TCPLogger* logger = (TCPLogger*)arg;
     logger->complete = true;
     return ERR_OK;
 }
 static err_t tcp_client_recv(void* arg, struct tcp_pcb* tpcb, struct pbuf* packet_buffer, err_t err) {
-    // printf("on receive\n");
+    if (packet_buffer) {
+        pbuf_free(packet_buffer);
+    }
     return ERR_OK;
 }
 static err_t tcp_client_on_connected(void* arg, struct tcp_pcb* tpcb, err_t err) {
-    // printf("on connect\n");
     TCPLogger* logger = (TCPLogger*)arg;
-    logger->connected = true;
-    return ERR_OK;
+    if (err == ERR_OK) {
+        logger->connected = true;
+    }
+    else {
+        logger->failure = true;
+    }
+    return err;
 }
 static void tcp_client_on_error(void* arg, err_t err) {
     // printf("on error\n");

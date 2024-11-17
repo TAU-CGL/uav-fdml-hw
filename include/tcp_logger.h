@@ -33,6 +33,24 @@ bool tcpLoggerSend(TCPLogger* logger, char* message); // Returns true if success
 bool sendLogMessage(const char* ip, const u16_t port, char* message);
 bool sendHTTPMessage(const char* ip, const u16_t port, char* route, char* message);
 
-#define VERIFY(expr) { err = ((expr)); if ((err != ERR_OK)) {cyw43_arch_lwip_end(); return false;} }
+#define SAFE(expr) {\
+    cyw43_arch_lwip_begin();\
+    err = ((expr));\
+    cyw43_arch_lwip_end();\
+    if (err != ERR_OK) {\
+        tcpLoggerDestroy(logger);\
+        return false;\
+    }\
+}
+
+#define TRY_UNTIL(expr) {\
+    int tries = LOGGER_MAX_RETRIES;\
+    while ((tries-- > 0) && !((expr)) && !logger->failure)\
+        sleep_ms(LOGGER_WAIT);\
+    if (!((expr))) {\
+        tcpLoggerDestroy(logger);\
+        return false;\
+    }\
+}
 
 #endif

@@ -13,9 +13,9 @@ int initWiFi();
 int initI2C();
 void setOnboardLED(bool status);
 
-// #define SEND_HTTP() {sendHTTPMessage("192.168.0.104", 9988, "/receive", buffer);}
+#define SEND_HTTP() {sendHTTPMessage("192.168.0.104", 9988, "/receive", buffer);}
 // #define SEND_HTTP() {sendLogMessage("192.168.0.104", 9988, buffer);}
-#define SEND_HTTP() {printf(buffer);}
+// #define SEND_HTTP() {printf(buffer);}
 
 //////////////////
 
