@@ -1,0 +1,186 @@
+/* General layout
+body {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow-y: hidden;
+    margin: 0;
+    font-family: 'Arial', sans-serif;
+    background-color: #f5f5f5; 
+}
+
+header {
+    flex: 0 0 auto;
+    background-color: #343a40;
+    text-align: center;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    
+}
+
+h1 {
+    color: white;
+    font-size: 32px;
+    font-weight: bold;
+    padding: 1px;
+    margin-top: 10px;
+}
+
+main {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: row;
+    gap: 15px; 
+    padding: 15px;
+    overflow: hidden;
+}
+
+.table-container {
+    flex: 1;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+.table-container h3 {
+    padding: 15px;
+    margin: 0;
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #ddd;
+    font-size: 18px;
+}
+
+.table-container .form-check {
+    padding: 10px 15px;
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #ddd;
+}
+
+.table-container table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: white;
+}
+
+.table-container th, .table-container td {
+    padding: 10px;
+    border-bottom: 1px solid #ddd;
+    text-align: left;
+}
+
+.table-container th {
+    background-color: #f1f1f1;
+    font-weight: bold;
+}
+
+.table-container tbody {
+    height: 100%;
+    overflow-y: auto;
+    display: block;
+}
+
+.table-container tbody tr {
+    display: table;
+    width: 100%;
+}
+
+.chart-container {
+    flex: 2;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    padding: 15px;
+    overflow: hidden;
+}
+
+#distance-chart {
+    max-width: 100%;
+    max-height: 90%;
+    aspect-ratio: 16 / 9;
+}
+
+
+@media (max-width: 768px) {
+    main {
+        flex-direction: column;
+    }
+
+    .table-container, .chart-container {
+        flex: none;
+        width: 100%;
+    }
+} */
+
+
+/* Dashboard layout */
+body {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow-y: hidden;
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background-color: #f5f5f5; 
+}
+
+header {
+    flex: 0 0 auto;
+    background-color: #343a40;
+    text-align: center;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+h1 {
+    color: white;
+    font-size: 32px;
+    font-weight: bold;
+    padding: 1px;
+    margin-top: 10px;
+}
+
+main {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: row;
+    gap: 15px; 
+    padding-top: 15px;
+    padding-bottom: 40px;
+    overflow: hidden;
+}
+
+.table-container {
+    flex: 1;
+    overflow-y: auto; /* Allow the table to scroll */
+    padding: 15px;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.table-container-container {
+    overflow-y: scroll;
+}
+
+table {
+    width: 100%;
+}
+
+.chart-container {
+    flex: 2;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 15px;
+    background-color: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+#distance-chart {
+    /* max-width: 100%;
+    max-height: 100%; */
+}

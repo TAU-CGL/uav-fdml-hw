@@ -5,6 +5,8 @@
 #define LED_DELAY_MS 100
 #endif
 
+#define DATABASE_RESET_KEYWORD "$$$RESET_DB$$$"
+
 //////////////////
 // Helper methods
 //////////////////
@@ -24,6 +26,10 @@ int main() {
 
     setOnboardLED(true);
     char buffer[2048] = {0};
+
+    sprintf(buffer, DATABASE_RESET_KEYWORD);
+    SEND_HTTP();
+
     sprintf(buffer, "Initializing...\n");
     SEND_HTTP();
     

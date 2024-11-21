@@ -54,6 +54,7 @@ dkms.conf
 build/
 .vscode/
 .DS_Store
+__pycache__/
 
 # For privacy:
 ssid.cmake

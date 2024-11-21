@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Messages</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="/static/cdn/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="/static/cdn/npm/chart.js"></script>
+    <script src="/static/cdn/npm/moment"></script>
+    <script src="/static/cdn/npm/chartjs-adapter-moment"></script>
+    <!-- Socket.IO -->
+    <script src="/static/cdn/ajax/libs/socket.io/4.5.3/socket.io.min.js"></script>
+    <!-- Custom JS & CSS -->
+    <script src="/static/js/update_messages.js"></script>
+    <script src="/static/js/update_chart.js"></script>
+    <link rel="stylesheet" href="/static/css/style.css">
+
+</head>
+<body class="container mt-4">
+    <!-- Header -->
+    <header>
+        <h1>ToF Sensors Log</h1>
+    </header>
+
+    <!-- Main Content -->
+    <main>
+        <!-- Table Section -->
+        <div class="table-container">
+            <h3>Messages</h3>
+            <div class="form-check form-switch mb-2">
+                <input class="form-check-input" type="checkbox" id="toggle-distance" checked>
+                <label class="form-check-label" for="toggle-distance">Show Distance Messages</label>
+            </div>
+            <div class="table-container-container">
+                <table class="table table-striped" id="messages-table">
+                    <thead>
+                        <tr>
+                            <th>Message</th>
+                            <th>Timestamp</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for message, timestamp in messages %}
+                        <tr>
+                            <td>{{ message }}</td>
+                            <td>{{ timestamp }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Chart Section -->
+        <div class="chart-container">
+            <canvas id="distance-chart"></canvas>
+        </div>
+    </main>
+</body>
+</html>
