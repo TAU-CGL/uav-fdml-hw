@@ -1,8 +1,14 @@
+#include "pico/binary_info.h"
+#include "hardware/i2c.h"
+
 #include "tcp_logger.h"
 
 #include "VL53L1X_api.h"
 #include "VL53L1X_types.h"
+
 #define I2C_DEV_ADDR 0x29
+#define I2C_MUX0_ADDR 0x70
+#define I2C_MUX1_ADDR 0x71
 
 #ifndef LED_DELAY_MS
 #define LED_DELAY_MS 100
@@ -19,19 +25,16 @@ int initI2C();
 void setOnboardLED(bool status);
 void blinkLED();
 
-void setActiveSensor(int idx);
-int initSingleSensor(int idx);
-uint16_t sampleSingleDistance(int idx);
+void setActiveSensor(uint8_t idx, bool verbose);
+int initSingleSensor(uint8_t idx);
+uint16_t sampleSingleDistance(uint8_t idx);
 
 #define BUFFER_SIZE 2048
 #define SEND_HTTP() {sendHTTPMessage("192.168.0.104", 9988, "/receive", buffer);}
 // #define SEND_HTTP() {sendLogMessage("192.168.0.104", 9988, buffer);}
 // #define SEND_HTTP() {printf(buffer);}
 
-#define NUM_SENSORS 15
-#define A0_PIN 26
-#define A1_PIN 27
-#define A2_PIN 28
+#define NUM_SENSORS 16
 
 // Helper variables
 char buffer[BUFFER_SIZE] = {0};
@@ -40,6 +43,7 @@ VL53L1X_Status_t status;
 VL53L1X_Result_t results;
 bool firstRange[NUM_SENSORS];
 bool skipSensor[NUM_SENSORS];
+uint16_t distances[NUM_SENSORS];
 
 //////////////////
 
@@ -57,25 +61,31 @@ int main() {
         firstRange[idx] = true;
         skipSensor[idx] = true;
     }
-    // skipSensor[3] = false;
-    // skipSensor[4] = false;
-    skipSensor[5] = false; 
+    skipSensor[3+8] = false;
+    skipSensor[4+8] = false;
+    skipSensor[5+8] = false; 
 
     for (uint8_t idx = 0; idx < NUM_SENSORS; idx++) {
         if (skipSensor[idx]) continue;
-        setActiveSensor(idx);
+        setActiveSensor(idx, true);
         initSingleSensor(idx);
     }
     
     while (true) {
         blinkLED();
         for (uint8_t idx = 0; idx < NUM_SENSORS; idx++) {
+            distances[idx] = 0;
             if (skipSensor[idx]) continue;
-            setActiveSensor(idx);
-            uint16_t distance = sampleSingleDistance(idx);
-            sprintf(buffer, "{{%d}}\tdistance: %d[mm]\n", idx, distance);
-            SEND_HTTP();
+            setActiveSensor(idx, false);
+            distances[idx] = sampleSingleDistance(idx);
         }
+        // Convert distances to string (in buffer)
+        sprintf(buffer, "Distances[mm]: ");
+        for (uint8_t idx = 0; idx < NUM_SENSORS; idx++) {
+            sprintf(buffer + strlen(buffer), "%d, ", distances[idx]);
+        }
+        buffer[strlen(buffer)-2] = '\0';
+        SEND_HTTP();
     }
 }
 
@@ -102,9 +112,12 @@ int initWiFi() {
 }
 
 int initI2C() {
-    gpio_init(A0_PIN); gpio_set_dir(A0_PIN, GPIO_OUT);
-    gpio_init(A1_PIN); gpio_set_dir(A1_PIN, GPIO_OUT);
-    gpio_init(A2_PIN); gpio_set_dir(A2_PIN, GPIO_OUT);
+    i2c_init(i2c_default, VL53L1X_I2C_BAUDRATE);
+    gpio_set_function(PICO_DEFAULT_I2C_SDA_PIN, GPIO_FUNC_I2C);
+    gpio_set_function(PICO_DEFAULT_I2C_SCL_PIN, GPIO_FUNC_I2C);
+    gpio_pull_up(PICO_DEFAULT_I2C_SDA_PIN);
+    gpio_pull_up(PICO_DEFAULT_I2C_SCL_PIN);
+    bi_decl(bi_2pins_with_func(PICO_DEFAULT_I2C_SDA_PIN, PICO_DEFAULT_I2C_SCL_PIN, GPIO_FUNC_I2C));
 }
 
 void setOnboardLED(bool status) {
@@ -117,7 +130,7 @@ void blinkLED() {
     sleep_ms(LED_DELAY_MS);
 }
 
-int initSingleSensor(int idx) {
+int initSingleSensor(uint8_t idx) {
     uint8_t sensorState;
 
     sprintf(buffer, "Initializing sensor %d...\n", idx);
@@ -143,7 +156,7 @@ int initSingleSensor(int idx) {
     status += VL53L1X_SetInterMeasurementInMs(I2C_DEV_ADDR, 100);
     status += VL53L1X_StartRanging(I2C_DEV_ADDR);
 }
-uint16_t sampleSingleDistance(int idx){
+uint16_t sampleSingleDistance(uint8_t idx){
     do {
         status = VL53L1X_CheckForDataReady(I2C_DEV_ADDR, &dataReady);
         sleep_us(1);
@@ -157,11 +170,20 @@ uint16_t sampleSingleDistance(int idx){
     }
     return results.distance;
 }
-void setActiveSensor(int idx) {
-    gpio_put(A0_PIN, idx & 0x01);
-    gpio_put(A1_PIN, idx & 0x02 >> 1);
-    gpio_put(A2_PIN, idx & 0x04 >> 2);
-    sleep_ms(100);
-    sprintf(buffer, "Set active sensor %d...\n", idx);
-    SEND_HTTP();
+void setActiveSensor(uint8_t idx, bool verbose) {
+    if (verbose) {
+        sprintf(buffer, "Set active sensor %d...\n", idx);
+        SEND_HTTP();
+    }
+    
+    uint8_t addr = I2C_MUX0_ADDR;
+    if (idx >= 0x8) {
+        addr = I2C_MUX1_ADDR;
+        idx -= 0x8;
+    }
+    uint8_t data = 1 << idx;
+    if (i2c_write_blocking(i2c_default, addr, &data, 1, false) != 1) {
+        sprintf(buffer, "Failed setting active sensor %d!\n", idx);
+        SEND_HTTP();
+    }
 }
