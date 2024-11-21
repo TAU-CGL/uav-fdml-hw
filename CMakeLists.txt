@@ -43,6 +43,7 @@ set(PICO_BOARD pico_w CACHE STRING "Board type")
 # Pull in Raspberry Pi Pico SDK (must be before project)
 include(pico_sdk_import.cmake)
 include(ssid.cmake)
+include(${CMAKE_SOURCE_DIR}/thirdparty/VL53L1X-C-API/library/import.cmake)
 
 project(fdmlhw C CXX ASM)
 include_directories("${CMAKE_SOURCE_DIR}/include")
@@ -66,7 +67,8 @@ pico_enable_stdio_uart(fdmlhw 0)
 pico_add_extra_outputs(fdmlhw)
 
 target_include_directories(fdmlhw PRIVATE ${CMAKE_CURRENT_LIST_DIR})
-target_link_libraries(fdmlhw pico_cyw43_arch_lwip_threadsafe_background pico_stdlib hardware_i2c)
+target_link_libraries(fdmlhw PRIVATE
+    pico_cyw43_arch_lwip_threadsafe_background pico_stdlib hardware_i2c VL53L1X_pico_api)
 
 
 # add url via pico_set_program_url
