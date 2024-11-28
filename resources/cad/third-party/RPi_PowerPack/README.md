@@ -1,0 +1,1 @@
+Taken from: https://grabcad.com/library/raspberry-pi-4-with-powerpack-box-1
