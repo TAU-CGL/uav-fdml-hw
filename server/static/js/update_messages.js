@@ -1,5 +1,6 @@
 var updateChart = undefined;
 var maxDist = 4096;
+var sensorCount = 16; // Number of sensors
 
 document.addEventListener('DOMContentLoaded', () => {
     const socket = io();
@@ -20,49 +21,46 @@ document.addEventListener('DOMContentLoaded', () => {
         const { message, timestamp } = data;
 
         // Update the table if the toggle allows it
-        if (toggleDistance.checked || !message.startsWith('distance:')) {
+        if (toggleDistance.checked || !message.startsWith('Distances[mm]:')) {
             addToTable(message, timestamp);
         }
 
-        // Always update the chart for distance messages
-        if (message.startsWith('distance:')) {
-            const distance = parseInt(message.split(':')[1].trim().replace('[mm]', ''));
-            if (distance > maxDist || distance < 0) return;
-            if (typeof updateChart === "function") {
-                updateChart(timestamp, distance);
-            } else {
-                console.log(typeof updateChart);
+        // Update the chart for distance messages
+        if (message.startsWith('Distances[mm]:')) {
+            const distances = parseDistances(message);
+            if (distances) {
+                updateChart(timestamp, distances);
             }
         }
     });
 
     // Handle reset event
     socket.on('reset', () => {
-        // Clear table
+        // Clear the table
         while (tableBody.firstChild) {
             tableBody.removeChild(tableBody.firstChild);
         }
 
-        // Clear chart
+        // Clear the chart
         const chartData = distanceChart.data;
         chartData.labels = [];
-        chartData.datasets[0].data = [];
+        chartData.datasets.forEach(dataset => dataset.data = []);
         distanceChart.update();
     });
 
-    // Chart.js setup
+    // Chart.js setup for multiple lines
     const ctx = document.getElementById('distance-chart').getContext('2d');
     const distanceChart = new Chart(ctx, {
         type: 'line',
         data: {
             labels: [], // Timestamps
-            datasets: [{
-                label: 'Distance (mm)',
-                data: [], // Distances
-                borderColor: 'rgba(75, 192, 192, 1)',
+            datasets: Array.from({ length: sensorCount }, (_, i) => ({
+                label: `Sensor ${i + 1}`,
+                data: [], // Distances for each sensor
+                borderColor: `hsl(${(i / sensorCount) * 360}, 70%, 50%)`, // Distinct colors
                 borderWidth: 2,
                 fill: false
-            }]
+            }))
         },
         options: {
             aspectRatio: 5 / 4,
@@ -89,24 +87,36 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Update chart dynamically
-    var updateChart = (timestamp, distance) => {
+    // Parse distances from the message
+    function parseDistances(message) {
+        const match = message.match(/Distances\[mm\]:\s*([\d,\s]+)/);
+        if (!match) return null;
+
+        const distances = match[1].split(',').map(d => parseInt(d.trim(), 10));
+        if (distances.length !== sensorCount || distances.some(d => d < 0 || d > maxDist)) {
+            return null; // Ignore invalid or out-of-range data
+        }
+
+        return distances;
+    }
+
+    // Update chart dynamically for all sensors
+    var updateChart = (timestamp, distances) => {
         const chartData = distanceChart.data;
+
+        // Update the labels
         chartData.labels.push(timestamp);
-        chartData.datasets[0].data.push(distance);
+
+        // Update data for each sensor
+        distances.forEach((distance, i) => {
+            chartData.datasets[i].data.push(distance);
+        });
 
         // Keep only the last 50 points
         if (chartData.labels.length > 50) {
             chartData.labels.shift();
-            chartData.datasets[0].data.shift();
+            chartData.datasets.forEach(dataset => dataset.data.shift());
         }
-
-        // Sort timestamps to ensure proper plotting
-        const sortedData = chartData.labels
-            .map((label, index) => ({ label, value: chartData.datasets[0].data[index] }))
-            .sort((a, b) => new Date(a.label) - new Date(b.label));
-        chartData.labels = sortedData.map(d => d.label);
-        chartData.datasets[0].data = sortedData.map(d => d.value);
 
         distanceChart.update();
     };
@@ -155,48 +165,62 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Update the table with messages
-    function updateTable(messages, showDistance) {
-        // Clear the table
-        while (tableBody.firstChild) {
-            tableBody.removeChild(tableBody.firstChild);
+    var updateChart = (timestamp, distances) => {
+        const chartData = distanceChart.data;
+    
+        // Add new timestamp
+        chartData.labels.push(timestamp);
+    
+        // Add data for each sensor
+        distances.forEach((distance, i) => {
+            chartData.datasets[i].data.push(distance);
+        });
+    
+        // Keep only the last 50 points
+        if (chartData.labels.length > 50) {
+            chartData.labels.shift();
+            chartData.datasets.forEach(dataset => dataset.data.shift());
         }
     
-        // Filter and sort messages by timestamp in descending order
-        const sortedMessages = messages
-            .filter(({ message }) => showDistance || !message.startsWith('distance:')) // Respect toggle
-            .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp)); // Descending order
+        distanceChart.update();
+    };
     
-        // Populate the table with sorted messages
-        sortedMessages.forEach(({ message, timestamp }) => {
-            addToTable(message, timestamp);
-        });
-    }
 
     // Update the chart with all distance messages
     function updateChartWithMessages(messages) {
         const chartData = distanceChart.data;
-
-        // Clear existing data
+    
+        // Clear existing data to prevent connections between old and new points
         chartData.labels = [];
-        chartData.datasets[0].data = [];
-
-        // Populate the chart
+        chartData.datasets.forEach(dataset => (dataset.data = []));
+    
+        // Populate the chart with new data
         messages.forEach(({ message, timestamp }) => {
-            if (message.startsWith('distance:')) {
-                const distance = parseInt(message.split(':')[1].trim().replace('[mm]', ''));
-                if (distance > maxDist || distance < 0) return;
-                chartData.labels.push(timestamp);
-                chartData.datasets[0].data.push(distance);
+            if (message.startsWith('Distances[mm]:')) {
+                const distances = parseDistances(message);
+                if (distances) {
+                    chartData.labels.push(timestamp); // Add timestamp once
+                    distances.forEach((distance, i) => {
+                        chartData.datasets[i].data.push(distance); // Add sensor data
+                    });
+                }
             }
         });
-
-        // Sort timestamps for proper plotting
+    
+        // Sort timestamps to ensure proper plotting
         const sortedData = chartData.labels
-            .map((label, index) => ({ label, value: chartData.datasets[0].data[index] }))
-            .sort((a, b) => new Date(a.label) - new Date(b.label));
+            .map((label, index) => ({
+                label,
+                values: chartData.datasets.map(dataset => dataset.data[index])
+            }))
+            .sort((a, b) => new Date(a.label) - new Date(b.label)); // Sort by timestamp
+    
         chartData.labels = sortedData.map(d => d.label);
-        chartData.datasets[0].data = sortedData.map(d => d.value);
-
+        chartData.datasets.forEach((dataset, i) => {
+            dataset.data = sortedData.map(d => d.values[i]);
+        });
+    
         distanceChart.update();
     }
+    
 });
