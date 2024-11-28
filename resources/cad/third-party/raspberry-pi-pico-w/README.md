@@ -1,0 +1,1 @@
+Taken from: https://grabcad.com/library/raspberry-pi-pico-w-pins-1
