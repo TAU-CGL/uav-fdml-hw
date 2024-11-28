@@ -1,0 +1,1 @@
+Taken from: https://grabcad.com/library/650nm-laser-transmitter-module-ky-008-1
