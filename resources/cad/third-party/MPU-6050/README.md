@@ -1,0 +1,1 @@
+Taken from: https://grabcad.com/library/itg-mpu-gy-521-1
